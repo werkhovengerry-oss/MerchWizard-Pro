@@ -1,0 +1,10 @@
+{
+  "name": "MerchWizard Pro",
+  "description": "All-in-one research, trends, and listing assistant for Merch by Amazon sellers. Features BSR tracking, niche analysis, and bulk listing tools.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}
