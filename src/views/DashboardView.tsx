@@ -7,7 +7,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Trophy,
-  Filter
+  Filter,
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -17,12 +19,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell
 } from 'recharts';
 import { cn } from '../lib/utils';
 import { mockProducts, mockNiches } from '../services/mockData';
+import { useSearch } from '../contexts/SearchContext';
 
 const bsrData = [
   { name: 'Mon', bsr: 45000 },
@@ -34,18 +34,10 @@ const bsrData = [
   { name: 'Sun', bsr: 30000 },
 ];
 
-const salesData = [
-  { name: 'Jan', sales: 400 },
-  { name: 'Feb', sales: 300 },
-  { name: 'Mar', sales: 600 },
-  { name: 'Apr', sales: 800 },
-  { name: 'May', sales: 500 },
-];
-
-const StatCard = ({ title, value, change, isUp, icon: Icon, isDarkMode }: any) => (
-  <div className="bg-bg-dark p-4 border border-line">
-    <div className="flex justify-between items-start mb-2">
-      <div className="text-[11px] uppercase font-bold text-text-muted tracking-wider">{title}</div>
+const StatCard = ({ title, value, change, isUp, icon: Icon }: any) => (
+  <div className="bg-bg-dark p-6 border border-line hover:border-accent/40 transition-colors group">
+    <div className="flex justify-between items-start mb-4">
+      <div className="text-[10px] uppercase font-bold text-text-muted tracking-[0.2em]">{title}</div>
       <div className={cn(
         "flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded",
         isUp 
@@ -56,100 +48,131 @@ const StatCard = ({ title, value, change, isUp, icon: Icon, isDarkMode }: any) =
         {change}%
       </div>
     </div>
-    <div className="text-2xl font-semibold font-mono text-white leading-none">{value}</div>
+    <div className="flex items-center gap-3">
+       <div className="text-3xl font-black font-mono text-white leading-none italic uppercase tracking-tighter">{value}</div>
+       <Icon className="w-5 h-5 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
   </div>
 );
 
 export default function DashboardView({ isDarkMode }: { isDarkMode: boolean }) {
+  const { analysis, currentKeyword } = useSearch();
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
+      {/* Dynamic Header */}
+      {analysis && (
+        <div className="bg-accent p-8 text-white relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-8 shadow-xl">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[80px] pointer-events-none" />
+           <div className="relative z-10">
+              <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.3em] mb-2">
+                 <Zap className="w-4 h-4 fill-current" />
+                 Active Target Lock
+              </div>
+              <h2 className="text-5xl font-black italic uppercase tracking-tighter leading-none mb-4">
+                {analysis.keyword}
+              </h2>
+              <div className="flex gap-4">
+                 <div className="px-3 py-1 bg-white/10 border border-white/20 text-[10px] font-bold uppercase">BSR: {analysis.bsrEstimate}</div>
+                 <div className="px-3 py-1 bg-white/10 border border-white/20 text-[10px] font-bold uppercase">VOL: {analysis.searchVolume.toLocaleString()}</div>
+                 <div className="px-3 py-1 bg-white/10 border border-white/20 text-[10px] font-bold uppercase">RISK: {analysis.trademarkRisk}</div>
+              </div>
+           </div>
+           <div className="relative z-10 text-center">
+              <div className="text-7xl font-black italic tracking-tighter leading-none opacity-20 absolute -top-4 -left-8 pointer-events-none">KW</div>
+              <div className="text-sm font-bold uppercase mb-1">Opportunity Score</div>
+              <div className="text-6xl font-black italic leading-none">{analysis.opportunityScore}%</div>
+           </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-line bg-line gap-[1px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          title="Daily Sales (Est.)" 
-          value="1,240" 
-          change="12" 
+          title="Global Sales Velocity" 
+          value={analysis ? analysis.estimatedSales.toLocaleString() : "14.2K"} 
+          change="24" 
           isUp={true} 
           icon={DollarSign}
-          isDarkMode={isDarkMode}
         />
         <StatCard 
-          title="Avg. BSR (Top 50)" 
-          value="142,509" 
+          title="Market Saturation" 
+          value={analysis ? analysis.competitionLevel : "MED"} 
           change="8" 
+          isUp={false} 
+          icon={BarChart3}
+        />
+        <StatCard 
+          title="SEO Keywords Found" 
+          value={analysis ? analysis.topPhrases.length : "1.2K"} 
+          change="12" 
           isUp={true} 
           icon={TrendingUp}
-          isDarkMode={isDarkMode}
         />
         <StatCard 
-          title="Niches Analyzed" 
-          value="16,402" 
-          change="4" 
+          title="TM Integrity Index" 
+          value="99.4%" 
+          change="0" 
           isUp={true} 
-          icon={BarChart3}
-          isDarkMode={isDarkMode}
-        />
-        <StatCard 
-          title="TM Safe Score" 
-          value="98.2%" 
-          change="2" 
-          isUp={true} 
-          icon={Users}
-          isDarkMode={isDarkMode}
+          icon={ShieldAlert}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* BSR Performance */}
-        <div className="lg:col-span-2 p-6 bg-bg-surface border border-line">
-          <div className="flex justify-between items-center mb-8">
+        <div className="lg:col-span-2 p-8 bg-bg-surface border border-line shadow-sm overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+             <TrendingUp className="w-32 h-32 text-accent" />
+          </div>
+          <div className="flex justify-between items-center mb-12 relative z-10">
             <div>
-              <div className="text-[11px] uppercase font-bold text-text-muted tracking-wider mb-1">Historical BSR Velocity (30D)</div>
-              <div className="text-xl font-bold">AVG. 142k</div>
+              <div className="text-[10px] uppercase font-bold text-text-muted tracking-[0.2em] mb-2 italic">Historical BSR Velocity (Target: {currentKeyword || 'Global'})</div>
+              <div className="text-3xl font-black italic tracking-tighter uppercase">Market Pulse Alpha</div>
             </div>
-            <div className="flex gap-1">
-              <button className="px-2 py-1 text-[10px] font-bold border border-line bg-bg-dark text-text-muted hover:text-white transition-colors">1D</button>
-              <button className="px-2 py-1 text-[10px] font-bold border border-line bg-bg-dark text-text-muted hover:text-white transition-colors">7D</button>
-              <button className="px-2 py-1 text-[10px] font-bold border border-accent bg-accent/10 text-accent">30D</button>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 text-[10px] font-bold border border-line bg-bg-dark text-text-muted hover:text-white transition-all uppercase">Realtime</button>
+              <button className="px-3 py-1.5 text-[10px] font-bold border border-accent bg-accent/10 text-accent uppercase">30D Window</button>
             </div>
           </div>
           
-          <div className="h-[240px] w-full">
+          <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={bsrData}>
                 <defs>
                   <linearGradient id="colorBsr" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#2D3139" />
+                <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="#2D3139" opacity={0.3} />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#8E9299', fontSize: 10, fontFamily: 'monospace' }} 
+                  tick={{ fill: '#8E9299', fontSize: 10, fontWeight: 'bold' }} 
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#8E9299', fontSize: 10, fontFamily: 'monospace' }}
+                  tick={{ fill: '#8E9299', fontSize: 10, fontWeight: 'bold' }}
                   reversed
                 />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#14161B', 
                     borderColor: '#2D3139',
-                    borderRadius: '4px',
-                    fontSize: '11px'
+                    borderRadius: '0px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase'
                   }} 
                 />
                 <Area 
-                  type="monotone" 
+                  type="stepAfter" 
                   dataKey="bsr" 
                   stroke="#3B82F6" 
-                  strokeWidth={2}
+                  strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorBsr)" 
                 />
@@ -159,85 +182,41 @@ export default function DashboardView({ isDarkMode }: { isDarkMode: boolean }) {
         </div>
 
         {/* Niche Opportunities */}
-        <div className="p-6 bg-bg-surface border border-line">
-          <div className="flex justify-between items-center mb-6">
-            <div className="text-[11px] uppercase font-bold text-text-muted tracking-wider">Top Predicted Keywords</div>
-            <Filter className="w-4 h-4 text-text-muted" />
+        <div className="p-8 bg-bg-surface border border-line border-l-4 border-l-accent shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <div className="text-[10px] uppercase font-bold text-text-muted tracking-[0.2em] italic">Trending_Sub_Clusters</div>
+            <BarChart3 className="w-4 h-4 text-accent" />
           </div>
-          <div className="space-y-1">
-            {mockNiches.map((niche, idx) => (
-              <div key={niche.id} className="flex justify-between items-center p-2 rounded hover:bg-white/[0.02] cursor-pointer group transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] font-mono text-text-muted">{idx + 1}.</span>
-                  <span className="text-sm font-medium group-hover:text-accent transition-colors">{niche.name}</span>
+          <div className="space-y-3">
+            {(analysis?.topPhrases || mockNiches.map(n => n.name)).slice(0, 8).map((name, idx) => (
+              <div key={idx} className="flex justify-between items-center p-3 bg-bg-dark/50 border border-line hover:border-accent/40 cursor-pointer group transition-all hover:translate-x-1">
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-mono text-text-muted opacity-50">{String(idx + 1).padStart(2, '0')}</span>
+                  <span className="text-xs font-black uppercase italic tracking-tighter group-hover:text-accent transition-colors">{name}</span>
                 </div>
-                <div className={cn(
-                  "text-[11px] font-bold font-mono",
-                  niche.trending === 'up' ? "text-success" : "text-text-muted"
-                )}>
-                  {niche.trending === 'up' ? '+' : ''}{Math.floor(Math.random() * 200) + 50}%
+                <div className="flex items-center gap-1.5 text-success">
+                   <ArrowUpRight className="w-3 h-3" />
+                   <span className="text-[10px] font-mono font-bold tracking-tighter">+{Math.floor(Math.random() * 200) + 50}%</span>
                 </div>
               </div>
             ))}
           </div>
-          <button className="w-full mt-6 py-2 border border-line bg-bg-dark text-text-muted text-[11px] font-bold hover:text-white transition-all uppercase tracking-wider">
-            Explore All Trends
+          <button className="w-full mt-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent hover:text-white transition-all transform skew-x-[-10deg]">
+            Deep Scrutiny Report
           </button>
         </div>
       </div>
 
-      {/* Recent Successes */}
-      <div className="bg-bg-surface border border-line">
-        <div className="px-6 py-4 border-b border-line">
-          <div className="text-[11px] uppercase font-bold text-text-muted tracking-wider">Market Intelligence Feed</div>
+      {/* Feed Update */}
+      {!analysis && (
+        <div className="bg-bg-dark border border-line p-12 text-center border-dashed group hover:border-accent/50 transition-colors">
+           <Zap className="w-12 h-12 text-text-muted mx-auto mb-4 opacity-20 group-hover:opacity-100 group-hover:text-accent transition-all" />
+           <h3 className="text-xl font-black italic uppercase tracking-tighter mb-2">Zero Data Context</h3>
+           <p className="text-text-muted text-xs mx-auto max-w-sm font-medium tracking-tight">
+             Enter a seed keyword in the console header to hydrate the dashboard with realtime marketplace metrics, BSR velocity, and trademark safeguards.
+           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-bg-dark text-[10px] uppercase font-bold text-text-muted tracking-wider border-b border-line">
-              <tr>
-                <th className="px-6 py-3">Product</th>
-                <th className="px-6 py-3">ASIN / Identity</th>
-                <th className="px-6 py-3">BSR Velocity</th>
-                <th className="px-6 py-3 text-center">Sales (Est)</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {mockProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-line rounded overflow-hidden">
-                        <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <span className="text-sm font-medium truncate max-w-[200px]">{product.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3">
-                    <span className="text-[11px] font-mono text-text-muted">{product.asin}</span>
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono font-bold">#{product.bsr.toLocaleString()}</span>
-                      <span className="text-[10px] text-success">↑ 4.2%</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-center">
-                    <span className="text-[11px] font-mono font-bold text-accent">{product.estimatedSales}/day</span>
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex gap-1 justify-end">
-                      <button className="p-1 border border-line rounded text-text-muted hover:text-white hover:bg-line transition-colors">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

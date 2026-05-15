@@ -33,6 +33,8 @@ import AssetsView from './views/AssetsView';
 import ListingView from './views/ListingView';
 import UploadView from './views/UploadView';
 
+import { SearchProvider, useSearch } from './contexts/SearchContext';
+
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, component: DashboardView },
   { id: 'niche', label: 'Niche Research', icon: Search, component: NicheView },
@@ -43,13 +45,22 @@ const tabs = [
   { id: 'upload', label: 'Bulk Upload', icon: Upload, component: UploadView },
 ];
 
-export default function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { performSearch, isScanning, currentKeyword, analysis } = useSearch();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component || DashboardView;
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      performSearch(searchQuery.trim());
+    }
+  };
 
   return (
     <div className="min-h-screen flex bg-bg-dark text-gray-200 overflow-hidden h-screen font-sans">
@@ -102,14 +113,13 @@ export default function App() {
           {isSidebarOpen && (
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Scan Queue</span>
-                <span className="text-[9px] bg-accent/20 text-accent px-1.5 py-0.5 rounded font-bold">8 ACTIVE</span>
+                <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Market Context</span>
+                {analysis && (
+                  <span className="text-[9px] bg-accent/20 text-accent px-1.5 py-0.5 rounded font-bold">READY</span>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <div className="text-[10px] bg-line/30 border border-line p-2 rounded">
-                  funny_retro_tees.csv<br/>
-                  <span className="opacity-50 text-[9px]">32% Processed</span>
-                </div>
+              <div className="text-[10px] bg-line/30 border border-line p-2 rounded truncate">
+                {currentKeyword || 'No active keyword'}
               </div>
             </div>
           )}
@@ -127,27 +137,39 @@ export default function App() {
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Header */}
         <header className="h-[56px] flex items-center justify-between px-6 border-b border-line bg-bg-surface sticky top-0 z-40">
-          <div className="flex items-center gap-6">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted">{activeTab.replace('-', ' ')}</h2>
+          <div className="flex items-center gap-6 flex-1">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted shrink-0">{activeTab.replace('-', ' ')}</h2>
             
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-text-muted uppercase">Scan Progress:</span>
-              <div className="w-[200px] h-1.5 bg-line rounded-full overflow-hidden">
-                <div className="h-full bg-accent w-[82%] rounded-full" />
-              </div>
-              <span className="text-[10px] font-bold text-accent">82%</span>
-            </div>
+            <form onSubmit={handleSearch} className="max-w-md w-full relative">
+              <input 
+                type="text" 
+                placeholder="Search keywords (e.g. 'Space Capybara 2024')..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-bg-dark border border-line h-9 pl-10 pr-4 text-xs font-medium focus:border-accent outline-none transition-colors"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+              {isScanning && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                   <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </form>
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="bg-accent text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-accent/90 transition-colors">
-              Export CSV
-            </button>
-            <button className="bg-bg-surface border border-line px-3 py-1 rounded text-[11px] font-bold text-text-muted hover:bg-line/20 transition-colors">
-              Pause
-            </button>
-            <div className="w-6 h-6 rounded bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent ml-2">
-              GA
+            <div className="flex bg-bg-dark border border-line rounded overflow-hidden">
+               <div className="px-3 py-1 flex flex-col items-center border-r border-line">
+                  <span className="text-[8px] font-bold text-text-muted uppercase">Latency</span>
+                  <span className="text-[10px] font-mono text-success">142ms</span>
+               </div>
+               <div className="px-3 py-1 flex flex-col items-center">
+                  <span className="text-[8px] font-bold text-text-muted uppercase">Engine</span>
+                  <span className="text-[10px] font-mono text-accent">G3.1-F</span>
+               </div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent ml-2 border border-accent/30">
+              WA
             </div>
           </div>
         </header>
@@ -158,10 +180,10 @@ export default function App() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.1 }}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15 }}
               >
                 <ActiveComponent isDarkMode={true} />
               </motion.div>
@@ -170,6 +192,14 @@ export default function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <SearchProvider>
+      <AppContent />
+    </SearchProvider>
   );
 }
 
